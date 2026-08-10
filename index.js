@@ -103,6 +103,73 @@ app.get("/api/search", async(req, res)=>{
     }
 });
 
+//Phase 3: Basic Authentication
+app.post("/api/kitchen/inventory", (req,res)=> {
+    // Grab the Authorisaiton heaser from the incoming request
+    const authHeader = req.headers.authorization;
+
+    // 2.Check if the header exists and is formatted correctly
+    if(!authHeader || !authHeader.startsWith("Basic ")){
+        res.setHeader("WWW-Authenticate", "Basic");
+        return res.status(401).json({ success: false, message: "Access denied.Credentials required!"});
+    }
+
+    // 3.Extract the Base64 string and decode it
+    const base64Credentials = authHeader.split(" ")[1]
+    const decodeText = Buffer.from(base64Credentials, "base64").toString("utf-8");
+
+    // decodeText now looks like: "chef:spicy123"
+    const [username, password] = decodeText.split(":");
+
+    // 4. Verify the credentials (hardcoded for this lesson)
+    if(username === "chef" && password === process.env.password){
+        res.json({
+            success:true,
+            message: "Welcome, Chef! Here is the current invetory.",
+            inventory:{ onions: 15, garlic: 30, heavyCream:5}
+        });
+    }else {
+        res.status(401).json({ success: false, message: "Invalid username or password."});
+    }
+});
+
+// Phase 4: Authorization & Bearer Tokens
+app.get("/api/favorites", (req,res)=>{
+    // Grab the authorzation header
+    const authHeader = req.headers.authorization;
+
+    // Check if exists and starts with Bearer
+    if(!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({
+            success:false,
+            message:"Access denied. Bearer token required."
+        });
+    }
+
+    // 3. Extract the token itself
+    const token = authHeader.split(" ")[1];
+
+    // 4. Verify token
+    const validToken = process.env.token;
+
+    if(token === validToken){
+        res.json({
+            success:"true",
+            message: "Access granted to favorites",
+            favorites: [
+                { id: "52771", name: "Spicy Arrabiata Penne" },
+                { id: "52844", name: "Lasagne" }
+            ]
+        });
+    }else {
+        // Token exists but is wrong (403 forbidden)
+        res.status(403).json({
+            success:false,
+            message:"Invalid token. Access forbidden"
+        })
+    }
+});
+
 app.listen(PORT, ()=>{
     console.log(`Sous-Chef Gateway is running on port ${PORT}`);
 });
