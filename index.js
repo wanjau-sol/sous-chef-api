@@ -1,11 +1,28 @@
 import express from "express";
 import axios from "axios";
 import dotenv from "dotenv";
+import pg from "pg";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT;
+const { Pool } = pg;
+
+app.use(express.json());
+
+const db = new Pool({
+    user:process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    database: process.env.DB_NAME
+});
+
+// Test the connection when the srver starts
+db.connect()
+    .then(()=>{console.log("Database connected successfully.")})
+    .catch((error)=>{console.error("Database connection error:", error.message)});
 
 // Phase 1:Basic REST * JSON Structure
 app.get("/api/random-recipe", async(req,res)=>{
